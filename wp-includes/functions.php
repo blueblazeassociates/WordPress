@@ -2662,7 +2662,9 @@ function wp_json_encode( $data, $options = 0, $depth = 512 ) {
 	$json = call_user_func_array( 'json_encode', $args );
 
 	// If json_encode() was successful, no need to do more sanity checking.
-	if ( false !== $json ) {
+	// ... unless we're in an old version of PHP, and json_encode() returned
+	// a string containing 'null'. Then we need to do more sanity checking.
+	if ( false !== $json && ( version_compare( PHP_VERSION, '5.5', '>=' ) || false === strpos( $json, 'null' ) ) )  {
 		return $json;
 	}
 
@@ -3445,11 +3447,11 @@ function _deprecated_file( $file, $version, $replacement = null, $message = '' )
  * Before this function is called, the argument must be checked for whether it was
  * used by comparing it to its default value or evaluating whether it is empty.
  * For example:
- * <code>
- * if ( ! empty( $deprecated ) ) {
- * 	_deprecated_argument( __FUNCTION__, '3.0' );
- * }
- * </code>
+ *
+ *     if ( ! empty( $deprecated ) ) {
+ *         _deprecated_argument( __FUNCTION__, '3.0' );
+ *     }
+ *
  *
  * There is a hook deprecated_argument_run that will be called that can be used
  * to get the backtrace up to what file and function used the deprecated
@@ -4163,13 +4165,15 @@ function wp_scheduled_delete() {
  * If the file data is not within that first 8kiB, then the author should correct
  * their plugin file and move the data headers to the top.
  *
- * @see http://codex.wordpress.org/File_Header
+ * @link http://codex.wordpress.org/File_Header
  *
  * @since 2.9.0
+ *
  * @param string $file            Path to the file.
  * @param array  $default_headers List of headers, in the format array('HeaderKey' => 'Header Name').
  * @param string $context         Optional. If specified adds filter hook "extra_{$context}_headers".
  *                                Default empty.
+ * @return array Array of file headers in `HeaderKey => Header Value` format.
  */
 function get_file_data( $file, $default_headers, $context = '' ) {
 	// We don't need to write to the file, so just open for reading.
