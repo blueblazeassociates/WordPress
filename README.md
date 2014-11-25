@@ -14,6 +14,6 @@ For example,
 In other words, look at the first 3 components of this projects version number to determine what
 version of WordPress is being used.
 
-It seems that it safe to do this because the WordPress project has only ever used a maximum of 3
+It seems safe to do this because the WordPress project has only ever used a maximum of 3
 versioning components (*.*.*).
  
