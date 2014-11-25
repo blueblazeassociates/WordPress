@@ -1,9 +1,9 @@
 {
 	"name" : "blueblazeassociates/wordpress",
 	"description" : "WordPress is web software you can use to create a beautiful website or blog. We like to say that WordPress is both free and priceless at the same time.",
-	"type" : "project",
-    "homepage" : "https://wordpress.org",
-    "license" : "GPL-2.0+",
+	"type" : "webroot",
+	"homepage" : "https://wordpress.org",
+	"license" : "GPL-2.0+",
 	"keywords" : [
 		"wordpress",
 		"cms",
