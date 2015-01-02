@@ -447,7 +447,7 @@ do_action( 'login_init' );
 /**
  * Fires before a specified login form action.
  *
- * The dynamic portion of the hook name, $action, refers to the action
+ * The dynamic portion of the hook name, `$action`, refers to the action
  * that brought the visitor to the login form. Actions include 'postpass',
  * 'logout', 'lostpassword', etc.
  *
@@ -635,7 +635,7 @@ case 'rp' :
 	</p>
 
 	<div id="pass-strength-result" class="hide-if-no-js"><?php _e('Strength indicator'); ?></div>
-	<p class="description indicator-hint"><?php echo _wp_get_password_hint(); ?></p>
+	<p class="description indicator-hint"><?php echo wp_get_password_hint(); ?></p>
 	<br class="clear" />
 
 	<?php

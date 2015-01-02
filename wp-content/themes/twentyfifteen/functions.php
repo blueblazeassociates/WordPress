@@ -80,7 +80,7 @@ function twentyfifteen_setup() {
 	add_theme_support( 'post-thumbnails' );
 	set_post_thumbnail_size( 825, 510, true );
 
-	// This theme uses wp_nav_menu() in one location.
+	// This theme uses wp_nav_menu() in two locations.
 	register_nav_menus( array(
 		'primary' => __( 'Primary Menu',      'twentyfifteen' ),
 		'social'  => __( 'Social Links Menu', 'twentyfifteen' ),
@@ -147,40 +147,29 @@ if ( ! function_exists( 'twentyfifteen_fonts_url' ) ) :
  *
  * @since Twenty Fifteen 1.0
  *
- * @return string
+ * @return string Google fonts URL for the theme.
  */
 function twentyfifteen_fonts_url() {
-	$fonts   = array();
-	$subsets = 'latin,latin-ext';
+	$fonts_url = '';
+	$fonts     = array();
+	$subsets   = 'latin,latin-ext';
 
-	/*
-	 * Translators: If there are characters in your language that are not supported
-	 * by Noto Sans, translate this to 'off'. Do not translate into your own language.
-	 */
+	/* translators: If there are characters in your language that are not supported by Noto Sans, translate this to 'off'. Do not translate into your own language. */
 	if ( 'off' !== _x( 'on', 'Noto Sans font: on or off', 'twentyfifteen' ) ) {
 		$fonts[] = 'Noto Sans:400italic,700italic,400,700';
 	}
 
-	/*
-	 * Translators: If there are characters in your language that are not supported
-	 * by Noto Serif, translate this to 'off'. Do not translate into your own language.
-	 */
+	/* translators: If there are characters in your language that are not supported by Noto Serif, translate this to 'off'. Do not translate into your own language. */
 	if ( 'off' !== _x( 'on', 'Noto Serif font: on or off', 'twentyfifteen' ) ) {
 		$fonts[] = 'Noto Serif:400italic,700italic,400,700';
 	}
 
-	/*
-	 * Translators: If there are characters in your language that are not supported
-	 * by Inconsolata, translate this to 'off'. Do not translate into your own language.
-	 */
+	/* translators: If there are characters in your language that are not supported by Inconsolata, translate this to 'off'. Do not translate into your own language. */
 	if ( 'off' !== _x( 'on', 'Inconsolata font: on or off', 'twentyfifteen' ) ) {
 		$fonts[] = 'Inconsolata:400,700';
 	}
 
-	/*
-	 * Translators: To add an additional character subset specific to your language,
-	 * translate this to 'greek', 'cyrillic', 'devanagari' or 'vietnamese'. Do not translate into your own language.
-	 */
+	/* translators: To add an additional character subset specific to your language, translate this to 'greek', 'cyrillic', 'devanagari' or 'vietnamese'. Do not translate into your own language. */
 	$subset = _x( 'no-subset', 'Add new subset (greek, cyrillic, devanagari, vietnamese)', 'twentyfifteen' );
 
 	if ( 'cyrillic' == $subset ) {
@@ -193,10 +182,14 @@ function twentyfifteen_fonts_url() {
 		$subsets .= ',vietnamese';
 	}
 
-	return add_query_arg( array(
-		'family' => urlencode( implode( '|', $fonts ) ),
-		'subset' => urlencode( $subsets ),
-	), '//fonts.googleapis.com/css' );
+	if ( $fonts ) {
+		$fonts_url = add_query_arg( array(
+			'family' => urlencode( implode( '|', $fonts ) ),
+			'subset' => urlencode( $subsets ),
+		), '//fonts.googleapis.com/css' );
+	}
+
+	return $fonts_url;
 }
 endif;
 
@@ -216,7 +209,7 @@ function twentyfifteen_scripts() {
 	wp_enqueue_style( 'twentyfifteen-style', get_stylesheet_uri() );
 
 	// Load the Internet Explorer specific stylesheet.
-	wp_enqueue_style( 'twentyfifteen-ie', get_template_directory_uri() . '/css/ie.css', array( 'twentyfifteen-style', 'genericons' ), '20141010' );
+	wp_enqueue_style( 'twentyfifteen-ie', get_template_directory_uri() . '/css/ie.css', array( 'twentyfifteen-style' ), '20141010' );
 	wp_style_add_data( 'twentyfifteen-ie', 'conditional', 'lt IE 9' );
 
 	// Load the Internet Explorer 7 specific stylesheet.
@@ -233,10 +226,10 @@ function twentyfifteen_scripts() {
 		wp_enqueue_script( 'twentyfifteen-keyboard-image-navigation', get_template_directory_uri() . '/js/keyboard-image-navigation.js', array( 'jquery' ), '20141010' );
 	}
 
-	wp_enqueue_script( 'twentyfifteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20141010', true );
+	wp_enqueue_script( 'twentyfifteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20141212', true );
 	wp_localize_script( 'twentyfifteen-script', 'screenReaderText', array(
-		'expand'   => '<span class="screen-reader-text">' . esc_html__( 'expand child menu', 'twentyfifteen' ) . '</span>',
-		'collapse' => '<span class="screen-reader-text">' . esc_html__( 'collapse child menu', 'twentyfifteen' ) . '</span>',
+		'expand'   => '<span class="screen-reader-text">' . __( 'expand child menu', 'twentyfifteen' ) . '</span>',
+		'collapse' => '<span class="screen-reader-text">' . __( 'collapse child menu', 'twentyfifteen' ) . '</span>',
 	) );
 }
 add_action( 'wp_enqueue_scripts', 'twentyfifteen_scripts' );
@@ -245,6 +238,8 @@ add_action( 'wp_enqueue_scripts', 'twentyfifteen_scripts' );
  * Add featured image as background image to post navigation elements.
  *
  * @since Twenty Fifteen 1.0
+ *
+ * @see wp_add_inline_style()
  */
 function twentyfifteen_post_nav_background() {
 	if ( ! is_single() ) {
@@ -263,7 +258,7 @@ function twentyfifteen_post_nav_background() {
 		$prevthumb = wp_get_attachment_image_src( get_post_thumbnail_id( $previous->ID ), 'post-thumbnail' );
 		$css .= '
 			.post-navigation .nav-previous { background-image: url(' . esc_url( $prevthumb[0] ) . '); }
-			.post-navigation .nav-previous .post-title, .post-navigation .nav-previous .meta-nav { color: #fff; }
+			.post-navigation .nav-previous .post-title, .post-navigation .nav-previous a:hover .post-title, .post-navigation .nav-previous .meta-nav { color: #fff; }
 			.post-navigation .nav-previous a:before { background-color: rgba(0, 0, 0, 0.4); }
 		';
 	}
@@ -272,7 +267,7 @@ function twentyfifteen_post_nav_background() {
 		$nextthumb = wp_get_attachment_image_src( get_post_thumbnail_id( $next->ID ), 'post-thumbnail' );
 		$css .= '
 			.post-navigation .nav-next { background-image: url(' . esc_url( $nextthumb[0] ) . '); }
-			.post-navigation .nav-next .post-title, .post-navigation .nav-next .meta-nav { color: #fff; }
+			.post-navigation .nav-next .post-title, .post-navigation .nav-next a:hover .post-title, .post-navigation .nav-next .meta-nav { color: #fff; }
 			.post-navigation .nav-next a:before { background-color: rgba(0, 0, 0, 0.4); }
 		';
 	}
@@ -290,7 +285,6 @@ add_action( 'wp_enqueue_scripts', 'twentyfifteen_post_nav_background' );
  * @param WP_Post $item        Menu item object.
  * @param int     $depth       Depth of the menu.
  * @param array   $args        wp_nav_menu() arguments.
- *
  * @return string Menu item with possible description.
  */
 function twentyfifteen_nav_description( $item_output, $item, $depth, $args ) {
@@ -307,9 +301,8 @@ add_filter( 'walker_nav_menu_start_el', 'twentyfifteen_nav_description', 10, 4 )
  *
  * @since Twenty Fifteen 1.0
  *
- * @param string $html Search form HTML
- *
- * @return string Modified search form HTML
+ * @param string $html Search form HTML.
+ * @return string Modified search form HTML.
  */
 function twentyfifteen_search_form_modify( $html ) {
 	return str_replace( 'class="search-submit"', 'class="search-submit screen-reader-text"', $html );

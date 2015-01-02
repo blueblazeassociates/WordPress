@@ -351,7 +351,7 @@ endif; ?>
 /**
  * Fires after the taxonomy list table.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+ * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
  *
  * @since 3.0.0
  *
@@ -420,7 +420,7 @@ if ( current_user_can($tax->cap->edit_terms) ) {
 	/**
 	 * Fires before the Add Term form for all taxonomies.
 	 *
-	 * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+	 * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
 	 *
 	 * @since 3.0.0
 	 *
@@ -431,16 +431,17 @@ if ( current_user_can($tax->cap->edit_terms) ) {
 
 <div class="form-wrap">
 <h3><?php echo $tax->labels->add_new_item; ?></h3>
+<form id="addtag" method="post" action="edit-tags.php" class="validate"
 <?php
 /**
  * Fires at the beginning of the Add Tag form.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+ * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
  *
  * @since 3.7.0
  */
-?>
-<form id="addtag" method="post" action="edit-tags.php" class="validate"<?php do_action( "{$taxonomy}_term_new_form_tag" ); ?>>
+do_action( "{$taxonomy}_term_new_form_tag" );
+?>>
 <input type="hidden" name="action" value="add-tag" />
 <input type="hidden" name="screen" value="<?php echo esc_attr($current_screen->id); ?>" />
 <input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>" />
@@ -477,6 +478,7 @@ if ( current_user_can($tax->cap->edit_terms) ) {
 	 * Filter the taxonomy parent drop-down on the Edit Term page.
 	 *
 	 * @since 3.7.0
+	 * @since 4.2.0 Added $context parameter.
 	 *
 	 * @param array  $dropdown_args {
 	 *     An array of taxonomy parent drop-down arguments.
@@ -491,8 +493,9 @@ if ( current_user_can($tax->cap->edit_terms) ) {
 	 *     @type string   $show_option_none Label to display if there are no terms. Default 'None'.
 	 * }
 	 * @param string $taxonomy The taxonomy slug.
+	 * @param string $context  Filter context. Accepts 'new' or 'edit'.
 	 */
-	$dropdown_args = apply_filters( 'taxonomy_parent_dropdown_args', $dropdown_args, $taxonomy );
+	$dropdown_args = apply_filters( 'taxonomy_parent_dropdown_args', $dropdown_args, $taxonomy, 'new' );
 	wp_dropdown_categories( $dropdown_args );
 	?>
 	<?php if ( 'category' == $taxonomy ) : // @todo: Generic text for hierarchical taxonomies ?>
@@ -521,7 +524,7 @@ if ( ! is_taxonomy_hierarchical( $taxonomy ) ) {
 /**
  * Fires after the Add Term form fields for hierarchical taxonomies.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+ * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
  *
  * @since 3.0.0
  *
@@ -566,7 +569,7 @@ if ( 'category' == $taxonomy ) {
 /**
  * Fires at the end of the Add Term form for all taxonomies.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+ * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
  *
  * @since 3.0.0
  *
@@ -582,10 +585,14 @@ do_action( "{$taxonomy}_add_form", $taxonomy );
 
 </div><!-- /col-container -->
 </div><!-- /wrap -->
+
+<?php if ( ! wp_is_mobile() ) : ?>
 <script type="text/javascript">
 try{document.forms.addtag['tag-name'].focus();}catch(e){}
 </script>
 <?php
+endif;
+
 $wp_list_table->inline_edit();
 
 include( ABSPATH . 'wp-admin/admin-footer.php' );

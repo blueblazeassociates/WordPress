@@ -51,7 +51,7 @@ if ( 'category' == $taxonomy ) {
 /**
  * Fires before the Edit Term form for all taxonomies.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to
+ * The dynamic portion of the hook name, `$taxonomy`, refers to
  * the taxonomy slug.
  *
  * @since 3.0.0
@@ -64,17 +64,18 @@ do_action( "{$taxonomy}_pre_edit_form", $tag, $taxonomy ); ?>
 <div class="wrap">
 <h2><?php echo $tax->labels->edit_item; ?></h2>
 <div id="ajax-response"></div>
+<form name="edittag" id="edittag" method="post" action="edit-tags.php" class="validate"
 <?php
 /**
  * Fires inside the Edit Term form tag.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to
+ * The dynamic portion of the hook name, `$taxonomy`, refers to
  * the taxonomy slug.
  *
  * @since 3.7.0
  */
-?>
-<form name="edittag" id="edittag" method="post" action="edit-tags.php" class="validate"<?php do_action( "{$taxonomy}_term_edit_form_tag" ); ?>>
+do_action( "{$taxonomy}_term_edit_form_tag" );
+?>>
 <input type="hidden" name="action" value="editedtag" />
 <input type="hidden" name="tag_ID" value="<?php echo esc_attr($tag->term_id) ?>" />
 <input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy) ?>" />
@@ -105,7 +106,22 @@ do_action( "{$taxonomy}_pre_edit_form", $tag, $taxonomy ); ?>
 		<tr class="form-field term-parent-wrap">
 			<th scope="row"><label for="parent"><?php _ex( 'Parent', 'term parent' ); ?></label></th>
 			<td>
-				<?php wp_dropdown_categories(array('hide_empty' => 0, 'hide_if_empty' => false, 'name' => 'parent', 'orderby' => 'name', 'taxonomy' => $taxonomy, 'selected' => $tag->parent, 'exclude_tree' => $tag->term_id, 'hierarchical' => true, 'show_option_none' => __('None'))); ?>
+				<?php
+				$dropdown_args = array(
+					'hide_empty'       => 0,
+					'hide_if_empty'    => false,
+					'taxonomy'         => $taxonomy,
+					'name'             => 'parent',
+					'orderby'          => 'name',
+					'selected'         => $tag->parent,
+					'exclude_tree'     => $tag->term_id,
+					'hierarchical'     => true,
+					'show_option_none' => __( 'None' ),
+				);
+
+				/** This filter is documented in wp-admin/edit-tags.php */
+				$dropdown_args = apply_filters( 'taxonomy_parent_dropdown_args', $dropdown_args, $taxonomy, 'edit' );
+				wp_dropdown_categories( $dropdown_args ); ?>
 				<?php if ( 'category' == $taxonomy ) : ?>
 				<p class="description"><?php _e('Categories, unlike tags, can have a hierarchy. You might have a Jazz category, and under that have children categories for Bebop and Big Band. Totally optional.'); ?></p>
 				<?php endif; ?>
@@ -153,7 +169,7 @@ do_action( "{$taxonomy}_pre_edit_form", $tag, $taxonomy ); ?>
 		/**
 		 * Fires after the Edit Term form fields are displayed.
 		 *
-		 * The dynamic portion of the hook name, $taxonomy, refers to
+		 * The dynamic portion of the hook name, `$taxonomy`, refers to
 		 * the taxonomy slug.
 		 *
 		 * @since 3.0.0
@@ -186,7 +202,7 @@ if ( 'category' == $taxonomy ) {
 /**
  * Fires at the end of the Edit Term form for all taxonomies.
  *
- * The dynamic portion of the hook name, $taxonomy, refers to the taxonomy slug.
+ * The dynamic portion of the hook name, `$taxonomy`, refers to the taxonomy slug.
  *
  * @since 3.0.0
  *
@@ -199,6 +215,9 @@ submit_button( __('Update') );
 ?>
 </form>
 </div>
+
+<?php if ( ! wp_is_mobile() ) : ?>
 <script type="text/javascript">
 try{document.forms.edittag.name.focus();}catch(e){}
 </script>
+<?php endif;

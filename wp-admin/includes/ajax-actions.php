@@ -828,7 +828,7 @@ function wp_ajax_get_tagcloud() {
 	if ( ! $tax ) {
 		wp_die( 0 );
 	}
-	
+
 	if ( ! current_user_can( $tax->cap->assign_terms ) ) {
 		wp_die( -1 );
 	}
@@ -2705,7 +2705,7 @@ function wp_ajax_parse_embed() {
 		// Admin is ssl and the embed is not. Iframes, scripts, and other "active content" will be blocked.
 		wp_send_json_error( array(
 			'type' => 'not-ssl',
-			'message' => sprintf( __( 'Preview not available. %s cannot be embedded securely.' ), '<code>' . esc_html( $url ) . '</code>' ),
+			'message' => __( 'This preview is unavailable in the editor.' ),
 		) );
 	}
 
@@ -2755,7 +2755,7 @@ function wp_ajax_parse_media_shortcode() {
 
 		wp_print_scripts( 'wp-playlist' );
 	} else {
-		wp_print_scripts( 'wp-mediaelement' );
+		wp_print_scripts( array( 'froogaloop', 'wp-mediaelement' ) );
 	}
 
 	wp_send_json_success( array(
@@ -2768,49 +2768,34 @@ function wp_ajax_parse_media_shortcode() {
  * AJAX handler for destroying multiple open sessions for a user.
  *
  * @since 4.1.0
- *
  */
 function wp_ajax_destroy_sessions() {
 
-	if ( empty( $_POST['user_id'] ) ) {
-		$user = new WP_Error();
-	} else {
-		$user = new WP_User( absint( $_POST['user_id'] ) );
-
-		if ( ! $user->exists() ) {
-			$user = new WP_Error();
-		} elseif ( ! current_user_can( 'edit_user', $user->ID ) ) {
-			$user = new WP_Error();
-		} elseif ( ! check_ajax_referer( sprintf( 'destroy_sessions_%d', $user->ID ), false, false ) ) {
-			$user = new WP_Error();
+	$user = get_userdata( (int) $_POST['user_id'] );
+	if ( $user ) {
+		if ( ! current_user_can( 'edit_user', $user->ID ) ) {
+			$user = false;
+		} elseif ( ! wp_verify_nonce( $_POST['nonce'], 'update-user_' . $user->ID ) ) {
+			$user = false;
 		}
 	}
 
-	if ( is_wp_error( $user ) ) {
+	if ( ! $user ) {
 		wp_send_json_error( array(
 			'message' => __( 'Could not log out user sessions. Please try again.' ),
 		) );
 	}
 
-	if ( isset( $_POST['token'] ) ) {
-		$keep = wp_unslash( $_POST['token'] );
-	} else {
-		$keep = null;
-	}
-
 	$sessions = WP_Session_Tokens::get_instance( $user->ID );
 
-	if ( is_string( $keep ) ) {
-		$sessions->destroy_others( $keep );
-		$message = __( 'You are now logged out everywhere else' );
+	if ( $user->ID === get_current_user_id() ) {
+		$sessions->destroy_others( wp_get_session_token() );
+		$message = __( 'You are now logged out everywhere else.' );
 	} else {
 		$sessions->destroy_all();
-		/* translators: 1: User's display name. */ 
-		$message = sprintf( __( '%s has been logged out' ), $user->display_name );
+		/* translators: 1: User's display name. */
+		$message = sprintf( __( '%s has been logged out.' ), $user->display_name );
 	}
 
-	wp_send_json_success( array(
-		'message' => $message
-	) );
-
+	wp_send_json_success( array( 'message' => $message ) );
 }

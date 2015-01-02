@@ -288,9 +288,9 @@ function wptexturize($text, $reset = false) {
 			}
 
 			// 9x9 (times), but never 0x9999
-			if ( 1 === preg_match( '/(?<=\d)x-?\d/', $curl ) ) {
+			if ( 1 === preg_match( '/(?<=\d)x\d/', $curl ) ) {
 				// Searching for a digit is 10 times more expensive than for the x, so we avoid doing this one!
-				$curl = preg_replace( '/\b(\d(?(?<=0)[\d\.,]+|[\d\.,]*))x(-?\d[\d\.,]*)\b/', '$1&#215;$2', $curl );
+				$curl = preg_replace( '/\b(\d(?(?<=0)[\d\.,]+|[\d\.,]*))x(\d[\d\.,]*)\b/', '$1&#215;$2', $curl );
 			}
 		}
 	}
@@ -577,7 +577,7 @@ function seems_utf8($str) {
  * @access private
  *
  * @param string $string The text which is to be encoded.
- * @param mixed $quote_style Optional. Converts double quotes if set to ENT_COMPAT, both single and double if set to ENT_QUOTES or none if set to ENT_NOQUOTES. Also compatible with old values; converting single quotes if set to 'single', double if set to 'double' or both if otherwise set. Default is ENT_NOQUOTES.
+ * @param int $quote_style Optional. Converts double quotes if set to ENT_COMPAT, both single and double if set to ENT_QUOTES or none if set to ENT_NOQUOTES. Also compatible with old values; converting single quotes if set to 'single', double if set to 'double' or both if otherwise set. Default is ENT_NOQUOTES.
  * @param string $charset Optional. The character encoding of the string. Default is false.
  * @param boolean $double_encode Optional. Whether to encode existing html entities. Default is false.
  * @return string The encoded text with HTML entities.
@@ -1022,6 +1022,7 @@ function remove_accents($string) {
 
 		$string = strtr($string, $chars);
 	} else {
+		$chars = array();
 		// Assume ISO-8859-1 if not UTF-8
 		$chars['in'] = chr(128).chr(131).chr(138).chr(142).chr(154).chr(158)
 			.chr(159).chr(162).chr(165).chr(181).chr(192).chr(193).chr(194)
@@ -1037,6 +1038,7 @@ function remove_accents($string) {
 		$chars['out'] = "EfSZszYcYuAAAAAACEEEEIIIINOOOOOOUUUUYaaaaaaceeeeiiiinoooooouuuuyy";
 
 		$string = strtr($string, $chars['in'], $chars['out']);
+		$double_chars = array();
 		$double_chars['in'] = array(chr(140), chr(156), chr(198), chr(208), chr(222), chr(223), chr(230), chr(240), chr(254));
 		$double_chars['out'] = array('OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th');
 		$string = str_replace($double_chars['in'], $double_chars['out'], $string);
@@ -1317,7 +1319,7 @@ function sanitize_title_with_dashes( $title, $raw_title = '', $context = 'displa
  * @since 2.5.1
  *
  * @param string $orderby Order by string to be checked.
- * @return string|bool Returns the order by clause if it is a match, false otherwise.
+ * @return false|string Returns the order by clause if it is a match, false otherwise.
  */
 function sanitize_sql_orderby( $orderby ){
 	preg_match('/^\s*([a-z0-9_]+(\s+(ASC|DESC))?(\s*,\s*|\s*$))+|^\s*RAND\(\s*\)\s*$/i', $orderby, $obmatches);
@@ -1944,7 +1946,7 @@ function make_clickable( $text ) {
  *         4 => '123456789 ',   // 10 characters: '123456789 1234567890a' was too long
  *         5 => '1234567890a ', // 12 characters: Too long, but no inner whitespace on which to split
  *         6 => '   45678   ',  // 11 characters: Perfect split
- *         7 => '1 3 5 7 9',    //  9 characters: End of $string
+ *         7 => '1 3 5 7 90 ',  // 11 characters: End of $string
  *     );
  *
  * @since 3.4.0
@@ -2219,7 +2221,7 @@ function wp_iso_descrambler($string) {
  * @access private
  *
  * @param array $match The preg_replace_callback matches array
- * @return array Converted chars
+ * @return string Converted chars
  */
 function _wp_iso_convert( $match ) {
 	return chr( hexdec( strtolower( $match[1] ) ) );
@@ -3694,7 +3696,8 @@ function _links_add_base($m) {
 	return $m[1] . '=' . $m[2] .
 		( preg_match( '#^(\w{1,20}):#', $m[3], $protocol ) && in_array( $protocol[1], wp_allowed_protocols() ) ?
 			$m[3] :
-			path_join( $_links_add_base, $m[3] ) )
+			WP_HTTP::make_absolute_url( $m[3], $_links_add_base )
+		)
 		. $m[2];
 }
 
