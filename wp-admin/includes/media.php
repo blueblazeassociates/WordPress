@@ -239,24 +239,23 @@ function _cleanup_image_add_caption( $matches ) {
 function media_send_to_editor($html) {
 ?>
 <script type="text/javascript">
-/* <![CDATA[ */
 var win = window.dialogArguments || opener || parent || top;
 win.send_to_editor('<?php echo addslashes($html); ?>');
-/* ]]> */
 </script>
 <?php
 	exit;
 }
 
 /**
- * This handles the file upload POST itself, creating the attachment post.
+ * Save a file submitted from a POST request and create an attachment post for it.
  *
  * @since 2.5.0
  *
- * @param string $file_id Index into the {@link $_FILES} array of the upload
- * @param int $post_id The post ID the media is associated with
- * @param array $post_data allows you to overwrite some of the attachment
- * @param array $overrides allows you to override the {@link wp_handle_upload()} behavior
+ * @param string $file_id   Index of the {@link $_FILES} array that the file was sent. Required.
+ * @param int    $post_id   The post ID of a post to attach the media item to. Required, but can
+ *                          be set to 0, creating a media item that has no relationship to a post.
+ * @param array  $post_data Overwrite some of the attachment. Optional.
+ * @param array  $overrides Override the {@link wp_handle_upload()} behavior. Optional.
  * @return int|WP_Error ID of the attachment or a WP_Error object on failure.
  */
 function media_handle_upload($file_id, $post_id, $post_data = array(), $overrides = array( 'test_form' => false )) {
@@ -295,17 +294,17 @@ function media_handle_upload($file_id, $post_id, $post_data = array(), $override
 			if ( ! empty( $meta['album'] ) && ! empty( $meta['artist'] ) ) {
 				/* translators: 1: audio track title, 2: album title, 3: artist name */
 				$content .= sprintf( __( '"%1$s" from %2$s by %3$s.' ), $title, $meta['album'], $meta['artist'] );
-			} else if ( ! empty( $meta['album'] ) ) {
+			} elseif ( ! empty( $meta['album'] ) ) {
 				/* translators: 1: audio track title, 2: album title */
 				$content .= sprintf( __( '"%1$s" from %2$s.' ), $title, $meta['album'] );
-			} else if ( ! empty( $meta['artist'] ) ) {
+			} elseif ( ! empty( $meta['artist'] ) ) {
 				/* translators: 1: audio track title, 2: artist name */
 				$content .= sprintf( __( '"%1$s" by %2$s.' ), $title, $meta['artist'] );
 			} else {
 				$content .= sprintf( __( '"%s".' ), $title );
 			}
 
-		} else if ( ! empty( $meta['album'] ) ) {
+		} elseif ( ! empty( $meta['album'] ) ) {
 
 			if ( ! empty( $meta['artist'] ) ) {
 				/* translators: 1: audio album title, 2: artist name */
@@ -314,7 +313,7 @@ function media_handle_upload($file_id, $post_id, $post_data = array(), $override
 				$content .= $meta['album'] . '.';
 			}
 
-		} else if ( ! empty( $meta['artist'] ) ) {
+		} elseif ( ! empty( $meta['artist'] ) ) {
 
 			$content .= $meta['artist'] . '.';
 
@@ -448,11 +447,9 @@ if ( ( is_array( $content_func ) && ! empty( $content_func[1] ) && 0 === strpos(
 wp_enqueue_style( 'ie' );
 ?>
 <script type="text/javascript">
-//<![CDATA[
 addLoadEvent = function(func){if(typeof jQuery!="undefined")jQuery(document).ready(func);else if(typeof wpOnload!='function'){wpOnload=func;}else{var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}};
 var ajaxurl = '<?php echo admin_url( 'admin-ajax.php', 'relative' ); ?>', pagenow = 'media-upload-popup', adminpage = 'media-upload-popup',
 isRtl = <?php echo (int) is_rtl(); ?>;
-//]]>
 </script>
 <?php
 	/** This action is documented in wp-admin/admin-header.php */
@@ -682,10 +679,8 @@ function media_upload_form_handler() {
 
 	if ( isset($_POST['insert-gallery']) || isset($_POST['update-gallery']) ) { ?>
 		<script type="text/javascript">
-		/* <![CDATA[ */
 		var win = window.dialogArguments || opener || parent || top;
 		win.tb_remove();
-		/* ]]> */
 		</script>
 		<?php
 		exit;
@@ -1946,7 +1941,6 @@ function media_upload_type_form($type = 'file', $errors = null, $id = null) {
 <?php media_upload_form( $errors ); ?>
 
 <script type="text/javascript">
-//<![CDATA[
 jQuery(function($){
 	var preloaded = $(".media-item.preloaded");
 	if ( preloaded.length > 0 ) {
@@ -1954,7 +1948,6 @@ jQuery(function($){
 	}
 	updateMediaForm();
 });
-//]]>
 </script>
 <div id="media-items"><?php
 
@@ -2009,7 +2002,6 @@ function media_upload_type_url_form($type = null, $errors = null, $id = null) {
 <h3 class="media-title"><?php _e('Insert media from another website'); ?></h3>
 
 <script type="text/javascript">
-//<![CDATA[
 var addExtImage = {
 
 	width : '',
@@ -2086,21 +2078,19 @@ var addExtImage = {
 			return false;
 		}
 
-		document.getElementById('status_img').innerHTML = '<img src="<?php echo esc_url( admin_url( 'images/wpspin_light.gif' ) ); ?>" alt="" width="16" />';
+		document.getElementById('status_img').innerHTML = '<img src="<?php echo esc_url( admin_url( 'images/spinner-2x.gif' ) ); ?>" alt="" width="16" height="16" />';
 		t.preloadImg = new Image();
 		t.preloadImg.onload = t.updateImageData;
 		t.preloadImg.onerror = t.resetImageData;
 		t.preloadImg.src = src;
 	}
-}
+};
 
 jQuery(document).ready( function($) {
 	$('.media-types input').click( function() {
 		$('table.describe').toggleClass('not-image', $('#not-image').prop('checked') );
 	});
 });
-
-//]]>
 </script>
 
 <div id="media-items">
@@ -2303,7 +2293,7 @@ function media_upload_library_form($errors) {
 
 ?>
 
-<form id="filter" action="" method="get">
+<form id="filter" method="get">
 <input type="hidden" name="type" value="<?php echo esc_attr( $type ); ?>" />
 <input type="hidden" name="tab" value="<?php echo esc_attr( $tab ); ?>" />
 <input type="hidden" name="post_id" value="<?php echo (int) $post_id; ?>" />

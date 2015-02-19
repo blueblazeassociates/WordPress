@@ -146,7 +146,7 @@ class wpdb {
 	/**
 	 * Cached column info, for sanity checking data before inserting
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 * @var array
 	 */
@@ -155,7 +155,7 @@ class wpdb {
 	/**
 	 * Calculated character sets on tables
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 * @var array
 	 */
@@ -164,7 +164,7 @@ class wpdb {
 	/**
 	 * Whether text fields in the current query need to be sanity checked.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 * @var bool
 	 */
@@ -230,7 +230,7 @@ class wpdb {
 	var $ready = false;
 
 	/**
-	 * {@internal Missing Description}}
+	 * Blog ID.
 	 *
 	 * @since 3.0.0
 	 * @access public
@@ -239,7 +239,7 @@ class wpdb {
 	public $blogid = 0;
 
 	/**
-	 * {@internal Missing Description}}
+	 * Site ID.
 	 *
 	 * @since 3.0.0
 	 * @access public
@@ -624,8 +624,6 @@ class wpdb {
 			}
 		}
 
-		$this->init_charset();
-
 		$this->dbuser = $dbuser;
 		$this->dbpassword = $dbpassword;
 		$this->dbname = $dbname;
@@ -717,16 +715,31 @@ class wpdb {
 	public function init_charset() {
 		if ( function_exists('is_multisite') && is_multisite() ) {
 			$this->charset = 'utf8';
-			if ( defined( 'DB_COLLATE' ) && DB_COLLATE )
+			if ( defined( 'DB_COLLATE' ) && DB_COLLATE ) {
 				$this->collate = DB_COLLATE;
-			else
+			} else {
 				$this->collate = 'utf8_general_ci';
+			}
 		} elseif ( defined( 'DB_COLLATE' ) ) {
 			$this->collate = DB_COLLATE;
 		}
 
-		if ( defined( 'DB_CHARSET' ) )
+		if ( defined( 'DB_CHARSET' ) ) {
 			$this->charset = DB_CHARSET;
+		}
+
+		if ( ( $this->use_mysqli && ! ( $this->dbh instanceof mysqli ) )
+		  || ( empty( $this->dbh ) || ! ( $this->dbh instanceof mysqli ) ) ) {
+			return;
+		}
+
+		if ( 'utf8' === $this->charset && $this->has_cap( 'utf8mb4' ) ) {
+			$this->charset = 'utf8mb4';
+		}
+
+		if ( 'utf8mb4' === $this->charset && ( ! $this->collate || stripos( $this->collate, 'utf8_' ) === 0 ) ) {
+			$this->collate = 'utf8mb4_unicode_ci';
+		}
 	}
 
 	/**
@@ -751,7 +764,7 @@ class wpdb {
 					$query = $this->prepare( 'SET NAMES %s', $charset );
 					if ( ! empty( $collate ) )
 						$query .= $this->prepare( ' COLLATE %s', $collate );
-					mysqli_query( $query, $dbh );
+					mysqli_query( $dbh, $query );
 				}
 			} else {
 				if ( function_exists( 'mysql_set_charset' ) && $this->has_cap( 'set_charset' ) ) {
@@ -1366,7 +1379,7 @@ class wpdb {
 			while ( mysqli_more_results( $this->dbh ) ) {
 				mysqli_next_result( $this->dbh );
 			}
-		} else if ( is_resource( $this->result ) ) {
+		} elseif ( is_resource( $this->result ) ) {
 			mysql_free_result( $this->result );
 		}
 	}
@@ -1435,9 +1448,9 @@ class wpdb {
 
 				if ( $this->has_connected ) {
 					$attempt_fallback = false;
-				} else if ( defined( 'WP_USE_EXT_MYSQL' ) && ! WP_USE_EXT_MYSQL ) {
+				} elseif ( defined( 'WP_USE_EXT_MYSQL' ) && ! WP_USE_EXT_MYSQL ) {
 					$attempt_fallback = false;
-				} else if ( ! function_exists( 'mysql_connect' ) ) {
+				} elseif ( ! function_exists( 'mysql_connect' ) ) {
 					$attempt_fallback = false;
 				}
 
@@ -1475,9 +1488,15 @@ class wpdb {
 " ), htmlspecialchars( $this->dbhost, ENT_QUOTES ) ), 'db_connect_fail' );
 
 			return false;
-		} else if ( $this->dbh ) {
+		} elseif ( $this->dbh ) {
+			if ( ! $this->has_connected ) {
+				$this->init_charset();
+			}
+
 			$this->has_connected = true;
+
 			$this->set_charset( $this->dbh );
+
 			$this->ready = true;
 			$this->set_sql_mode();
 			$this->select( $this->dbname, $this->dbh );
@@ -1600,6 +1619,9 @@ class wpdb {
 		// If we're writing to the database, make sure the query will write safely.
 		if ( $this->check_current_query && ! $this->check_ascii( $query ) ) {
 			$stripped_query = $this->strip_invalid_text_from_query( $query );
+			// strip_invalid_text_from_query() can perform queries, so we need
+			// to flush again, just to make sure everything is clear.
+			$this->flush();
 			if ( $stripped_query !== $query ) {
 				$this->insert_id = 0;
 				return false;
@@ -1673,7 +1695,7 @@ class wpdb {
 					$this->last_result[$num_rows] = $row;
 					$num_rows++;
 				}
-			} else if ( is_resource( $this->result ) ) {
+			} elseif ( is_resource( $this->result ) ) {
 				while ( $row = @mysql_fetch_object( $this->result ) ) {
 					$this->last_result[$num_rows] = $row;
 					$num_rows++;
@@ -1903,7 +1925,7 @@ class wpdb {
 	 * using that to determine if any invalid text would be stripped. If text is
 	 * stripped, then field processing is rejected and the query fails.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param string $table  Table name.
@@ -1931,7 +1953,7 @@ class wpdb {
 	/**
 	 * Prepares arrays of value/format pairs as passed to wpdb CRUD methods.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param array $data   Array of fields to values.
@@ -1967,7 +1989,7 @@ class wpdb {
 	 * Adds field charsets to field/value/format arrays generated by
 	 * the {@see wpdb::process_field_formats()} method.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param array  $data  As it comes from the {@see wpdb::process_field_formats()} method.
@@ -2017,7 +2039,6 @@ class wpdb {
 		$this->func_call = "\$db->get_var(\"$query\", $x, $y)";
 
 		if ( $query ) {
-			$this->check_current_query = false;
 			$this->query( $query );
 		}
 
@@ -2046,7 +2067,6 @@ class wpdb {
 	public function get_row( $query = null, $output = OBJECT, $y = 0 ) {
 		$this->func_call = "\$db->get_row(\"$query\",$output,$y)";
 		if ( $query ) {
-			$this->check_current_query = false;
 			$this->query( $query );
 		} else {
 			return null;
@@ -2084,7 +2104,6 @@ class wpdb {
 	 */
 	public function get_col( $query = null , $x = 0 ) {
 		if ( $query ) {
-			$this->check_current_query = false;
 			$this->query( $query );
 		}
 
@@ -2113,7 +2132,6 @@ class wpdb {
 		$this->func_call = "\$db->get_results(\"$query\", $output)";
 
 		if ( $query ) {
-			$this->check_current_query = false;
 			$this->query( $query );
 		} else {
 			return null;
@@ -2157,7 +2175,7 @@ class wpdb {
 	/**
 	 * Retrieves the character set for the given table.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param string $table Table name.
@@ -2172,7 +2190,7 @@ class wpdb {
 		 * Passing a non-null value to the filter will effectively short-circuit
 		 * checking the DB for the charset, returning that value instead.
 		 *
-		 * @since 4.1.0
+		 * @since 4.2.0
 		 *
 		 * @param string $charset The character set to use. Default null.
 		 * @param string $table   The name of the table being checked.
@@ -2249,15 +2267,15 @@ class wpdb {
 	/**
 	 * Retrieves the character set for the given column.
 	 *
-	 * @since 4.1.0
-	 * @access protected
+	 * @since 4.2.0
+	 * @access public
 	 *
 	 * @param string $table  Table name.
 	 * @param string $column Column name.
 	 * @return mixed Column character set as a string. False if the column has no
 	 *               character set. {@see WP_Error} object if there was an error.
 	 */
-	protected function get_col_charset( $table, $column ) {
+	public function get_col_charset( $table, $column ) {
 		$tablekey = strtolower( $table );
 		$columnkey = strtolower( $column );
 
@@ -2267,7 +2285,7 @@ class wpdb {
 		 * Passing a non-null value to the filter will short-circuit
 		 * checking the DB for the charset, returning that value instead.
 		 *
-		 * @since 4.1.0
+		 * @since 4.2.0
 		 *
 		 * @param string $charset The character set to use. Default null.
 		 * @param string $table   The name of the table being checked.
@@ -2316,7 +2334,7 @@ class wpdb {
 	 * The negative regex is faster for non-ASCII strings, as it allows
 	 * the search to finish as soon as it encounters a non-ASCII character.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param string $string String to check.
@@ -2337,7 +2355,7 @@ class wpdb {
 	/**
 	 * Strips any invalid characters based on value/charset pairs.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param array $data Array of value arrays. Each value array has the keys
@@ -2357,7 +2375,6 @@ class wpdb {
 			'gb2312'  => 'EUC-CN',
 			'ujis'    => 'EUC-JP',
 			'utf32'   => 'UTF-32',
-			'utf8mb4' => 'UTF-8',
 		);
 
 		$supported_charsets = array();
@@ -2392,8 +2409,8 @@ class wpdb {
 				}
 			}
 
-			// utf8(mb3) can be handled by regex, which is a bunch faster than a DB lookup.
-			if ( 'utf8' === $charset || 'utf8mb3' === $charset ) {
+			// utf8 can be handled by regex, which is a bunch faster than a DB lookup.
+			if ( 'utf8' === $charset || 'utf8mb3' === $charset || 'utf8mb4' === $charset ) {
 				$regex = '/
 					(
 						(?: [\x00-\x7F]                  # single-byte sequences   0xxxxxxx
@@ -2401,8 +2418,17 @@ class wpdb {
 						|   \xE0[\xA0-\xBF][\x80-\xBF]   # triple-byte sequences   1110xxxx 10xxxxxx * 2
 						|   [\xE1-\xEC][\x80-\xBF]{2}
 						|   \xED[\x80-\x9F][\x80-\xBF]
-						|   [\xEE-\xEF][\x80-\xBF]{2}
-						){1,50}                          # ...one or more times
+						|   [\xEE-\xEF][\x80-\xBF]{2}';
+
+				if ( 'utf8mb4' === $charset) {
+					$regex .= '
+						|    \xF0[\x90-\xBF][\x80-\xBF]{2} # four-byte sequences   11110xxx 10xxxxxx * 3
+						|    [\xF1-\xF3][\x80-\xBF]{3}
+						|    \xF4[\x80-\x8F][\x80-\xBF]{2}
+					';
+				}
+
+				$regex .= '){1,50}                          # ...one or more times
 					)
 					| .                                  # anything else
 					/x';
@@ -2435,9 +2461,12 @@ class wpdb {
 				}
 
 				// Change the charset to match the string(s) we're converting
-				if ( $charset !== $this->charset ) {
+				if ( $charset !== $connection_charset ) {
+					$connection_charset = $charset;
 					$this->set_charset( $this->dbh, $charset );
 				}
+
+				$this->check_current_query = false;
 
 				$row = $this->get_row( "SELECT " . implode( ', ', $query ), ARRAY_N );
 				if ( ! $row ) {
@@ -2454,7 +2483,7 @@ class wpdb {
 
 			// Don't forget to change the charset back!
 			if ( $connection_charset !== $this->charset ) {
-				$this->set_charset( $this->dbh, $connection_charset );
+				$this->set_charset( $this->dbh );
 			}
 		}
 
@@ -2464,7 +2493,7 @@ class wpdb {
 	/**
 	 * Strips any invalid characters from the query.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param string $query Query to convert.
@@ -2503,7 +2532,7 @@ class wpdb {
 	/**
 	 * Strips any invalid characters from the string for a given table and column.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access public
 	 *
 	 * @param string $table  Table name.
@@ -2512,7 +2541,7 @@ class wpdb {
 	 * @return string|WP_Error The converted string, or a `WP_Error` object if the conversion fails.
 	 */
 	public function strip_invalid_text_for_column( $table, $column, $value ) {
-		if ( $this->check_ascii( $value ) || ! is_string( $value ) ) {
+		if ( ! is_string( $value ) || $this->check_ascii( $value ) ) {
 			return $value;
 		}
 
@@ -2544,7 +2573,7 @@ class wpdb {
 	/**
 	 * Find the first table name referenced in a query.
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 * @access protected
 	 *
 	 * @param string $query The query to search.
@@ -2772,7 +2801,14 @@ class wpdb {
 			case 'set_charset' :
 				return version_compare( $version, '5.0.7', '>=' );
 			case 'utf8mb4' :      // @since 4.1.0
-				return version_compare( $version, '5.5.3', '>=' );
+				if ( version_compare( $version, '5.5.3', '<' ) ) {
+					return false;
+				}
+				if ( $this->use_mysqli ) {
+					return mysqli_get_client_version( $this->dbh ) >= 50503;
+				} else {
+					return mysql_get_client_version( $this->dbh ) >= 50503;
+				}
 		}
 
 		return false;
