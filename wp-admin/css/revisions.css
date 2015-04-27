@@ -42,7 +42,7 @@
 .revisions-tickmarks > div {
 	position: absolute;
 	height: 100%;
-	border-left: 1px solid #aaa;
+	border-left: 1px solid #a0a5aa;
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
@@ -554,7 +554,6 @@ div.revisions-controls > .wp-slider > .ui-slider-handle {
  * HiDPI Displays
  */
 @media print,
-  (-o-min-device-pixel-ratio: 5/4),
   (-webkit-min-device-pixel-ratio: 1.25),
   (min-resolution: 120dpi) {
 	.revision-tick.completed-false {

@@ -379,14 +379,16 @@ function wp_network_dashboard_right_now() {
 
 	<form action="<?php echo network_admin_url('users.php'); ?>" method="get">
 		<p>
-			<input type="search" name="s" value="" size="30" autocomplete="off" />
+			<label class="screen-reader-text" for="search-users"><?php _e( 'Search Users' ); ?></label>
+			<input type="search" name="s" value="" size="30" autocomplete="off" id="search-users"/>
 			<?php submit_button( __( 'Search Users' ), 'button', 'submit', false, array( 'id' => 'submit_users' ) ); ?>
 		</p>
 	</form>
 
 	<form action="<?php echo network_admin_url('sites.php'); ?>" method="get">
 		<p>
-			<input type="search" name="s" value="" size="30" autocomplete="off" />
+			<label class="screen-reader-text" for="search-sites"><?php _e( 'Search Sites' ); ?></label>
+			<input type="search" name="s" value="" size="30" autocomplete="off" id="search-sites"/>
 			<?php submit_button( __( 'Search Sites' ), 'button', 'submit', false, array( 'id' => 'submit_sites' ) ); ?>
 		</p>
 	</form>
@@ -518,7 +520,7 @@ function wp_dashboard_recent_drafts( $drafts = false ) {
 function _wp_dashboard_recent_comments_row( &$comment, $show_date = true ) {
 	$GLOBALS['comment'] =& $comment;
 
-	$comment_post_title = strip_tags(get_the_title( $comment->comment_post_ID ));
+	$comment_post_title = _draft_or_post_title( $comment->comment_post_ID );
 
 	if ( current_user_can( 'edit_post', $comment->comment_post_ID ) ) {
 		$comment_post_url = get_edit_post_link( $comment->comment_post_ID );
@@ -689,6 +691,15 @@ function wp_dashboard_recent_posts( $args ) {
 		'cache_results'  => false,
 		'perm'           => ( 'future' === $args['status'] ) ? 'editable' : 'readable',
 	);
+
+	/**
+	 * Filter the query arguments used for the Recent Posts widget.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param array $query_args The arguments passed to WP_Query to produce the list of posts.
+	 */
+	$query_args = apply_filters( 'dashboard_recent_posts_query_args', $query_args );
 	$posts = new WP_Query( $query_args );
 
 	if ( $posts->have_posts() ) {
@@ -1321,7 +1332,7 @@ function wp_welcome_panel() {
 		<?php if ( current_user_can( 'manage_options' ) ) : ?>
 			<li><?php printf( '<a href="%s" class="welcome-icon welcome-comments">' . __( 'Turn comments on or off' ) . '</a>', admin_url( 'options-discussion.php' ) ); ?></li>
 		<?php endif; ?>
-			<li><?php printf( '<a href="%s" class="welcome-icon welcome-learn-more">' . __( 'Learn more about getting started' ) . '</a>', __( 'http://codex.wordpress.org/First_Steps_With_WordPress' ) ); ?></li>
+			<li><?php printf( '<a href="%s" class="welcome-icon welcome-learn-more">' . __( 'Learn more about getting started' ) . '</a>', __( 'https://codex.wordpress.org/First_Steps_With_WordPress' ) ); ?></li>
 		</ul>
 	</div>
 	</div>

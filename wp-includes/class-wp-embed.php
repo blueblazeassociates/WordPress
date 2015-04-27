@@ -134,6 +134,7 @@ class WP_Embed {
 			$url = $attr['src'];
 		}
 
+
 		if ( empty( $url ) )
 			return '';
 
