@@ -1,0 +1,28 @@
+{
+  "name" : "blueblazeassociates/wordpress",
+  "description" : "WordPress is web software you can use to create a beautiful website or blog.",
+  "type" : "webroot",
+  "homepage" : "https://wordpress.org",
+  "license" : "GPL-2.0+",
+  "keywords" : [
+    "wordpress",
+    "cms",
+    "content management system",
+    "blog",
+    "blogging"
+  ],
+  "authors": [{
+    "name" : "WordPress Community",
+    "homepage" : "http://wordpress.org/about/"
+  }],
+  "support": {
+    "issues" : "http://core.trac.wordpress.org/",
+    "forum" : "http://wordpress.org/support/",
+    "wiki" : "http://codex.wordpress.org/",
+    "irc" : "irc://irc.freenode.net/wordpress",
+    "source" : "http://core.trac.wordpress.org/browser"
+  },
+  "require" : {
+    "fancyguy/webroot-installer" : "1.1.0"
+  }
+}
